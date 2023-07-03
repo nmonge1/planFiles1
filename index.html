@@ -26,6 +26,9 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
  
+  <!--leaflet draw plugin-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.js"></script>
 
   <!-- Position the map with Cascading Style Sheet (CSS) -->
   <style>
@@ -45,7 +48,7 @@
   // Set up initial map center and zoom level
   var map = L.map('map', {
     center: [34.098907, -118.327759], // EDIT latitude, longitude to re-center map
-    zoom: 10,  // EDIT from 1 to 18 -- decrease to zoom out, increase to zoom in
+    zoom: 9,  // EDIT from 1 to 18 -- decrease to zoom out, increase to zoom in
     tap: false  //IDK WHAT THIS MEANS 
   });
 
@@ -74,11 +77,11 @@
     maxZoom: 20,
     subdomains:['mt0','mt1','mt2','mt3']
 });
-controlLayers.addBaseLayer(googleSat, 'Satelite basemap')
+controlLayers.addBaseLayer(googleSat, 'Satelite basemap');
 
-  
-  
-  // see more basemap options at https://leaflet-extras.github.io/leaflet-providers/preview/
+
+
+// see more basemap options at https://leaflet-extras.github.io/leaflet-providers/preview/
 
 
 
@@ -100,7 +103,7 @@ for (var i in data) {
   var row = data[i];
   var marker = L.marker([row.Latitude, row.Longitude], {
       opacity: 1
-  }).bindPopup(row.PFN);      
+  }).bindPopup('Plan File: ' + row.PFN + '</br>' + 'Engineer: ' + row.ENGR);      
   markers.addLayer(marker);
 }
 });
@@ -109,15 +112,72 @@ map.addLayer(markers)
 
 
   
-//THIS IS THE SEARCH FUNCTION AND INCLUDES THE BLUE RADIUS
+//THIS IS THE SEARCH FUNCTION 
   var geocoder = L.Control.geocoder()
   .on('markgeocode', function(event) {
     var center = event.geocode.center;
     L.marker(center).addTo(map);
     map.setView(center, 13);
-    L.circle(center, 900).addTo(map);
+    //L.circle(center, 900).addTo(map);
 })
 .addTo(map);
+
+
+
+//leaflet draw plugin
+var drawnFeatures = new L.FeatureGroup();
+map.addLayer(drawnFeatures);
+
+var drawControl = new L.Control.Draw({
+  edit: {
+    featureGroup: drawnFeatures,
+    remove: true
+  },
+  draw: {
+    polygon: {
+      shapeOptions: {
+        color: 'red'
+      },
+    },
+    polyline: {
+      shapeOptions: {
+        color: 'green'
+      }, 
+    },
+    rect: {
+      shapeOptions: {
+        color: 'purple'
+      },
+    },
+    circle: {
+      shapeOptions: {
+        color: 'blue',
+      },
+    },
+    marker: false,
+  },
+});
+
+//to remove any of these shapes just do the follow: circle: false,
+
+map.addControl(drawControl);
+
+map.on("draw:created", function(e){
+  var type = e.layerType;
+  var layer = e.layer;
+  drawnFeatures.addLayer(layer);
+});
+
+map.on("draw:edited", function(e){
+  var type = e.layerType;
+  var layer = e.layers;
+  layers.eachLayer(function(layer){
+    console.log(layer)
+  })
+});
+
+
+
 
 
   </script>
