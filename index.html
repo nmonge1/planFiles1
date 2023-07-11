@@ -18,23 +18,17 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css" />
 
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-    }
-
+    
     #map {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      right: 0;
-      left: 0;
+      height: 100%;
+      width: 100%;
     }
   </style>
 
 </head>
 
 <body>
+  <input type="file" id="csvFileUpload">
   <div id="map"></div>
 
 
@@ -53,7 +47,7 @@
 
   <script>
 
-
+//defines the map 
     var map = L.map('map', {
       center: [34.098907, -118.327759], // where the map zooms in to
       zoom: 9 // can zoom from 0-18
@@ -75,7 +69,7 @@
     });
 
 
-    //this just create sthe link from the layer titles to the variable
+    //this just creates the link from the layer titles to the variable
     var baseLayers = {
       "Carto Light Basemap": light,
       "Stamen Terrain Basemap": terrain,
@@ -153,32 +147,37 @@
       layers.eachLayer(function (layer) {
       });
     });
+
+    //this displays the layers for the map
     var controlLayers = L.control.layers(baseLayers);
 
-    var engineerLayers = {}; // Create an object to hold the engineer marker cluster groups
 
+    /** the next chunk of code creates the layers, markers, and marker clusters using the data file **/
+    var engineerLayers = {}; // Create an object to hold the engineer subgroups
+    var parentGroup = L.markerClusterGroup();
+    map.addLayer(parentGroup);
+    controlLayers.addTo(map);
 
-    //this retrieves the file
-    $.get('./practice.csv', function (csvString) {
+    // Parse CSV string, build Markers and
+    // populate Layer Groups
+    function parseCsv(csvString) {
       var data = Papa.parse(csvString, {
         header: true,
         dynamicTyping: true
       }).data;
-      var parentGroup = L.markerClusterGroup();
 
       for (var i in data) {
         var row = data[i];
-        var engineer = row.Engineer;
+        var engineer = row.ASSIGNED_TO;
 
         if (!(engineer in engineerLayers)) {
           // Each overlay that should actually be a part of MCG
           // should be made as a Subgroup, with the MCG as their parent
           engineerLayers[engineer] = L.featureGroup.subGroup(parentGroup, []);
-
           controlLayers.addOverlay(engineerLayers[engineer], engineer);
         }
 
-        var marker = L.circleMarker([row.Latitude, row.Longitude], {
+        var marker = L.circleMarker([row.LATITUDE, row.LONGITUDE], {
           radius: 10,
           stroke: true,
           color: getColor(engineer),
@@ -187,32 +186,48 @@
           fill: true,
           fillColor: getColor(engineer),
           fillOpacity: 0.5
-        }).bindPopup('Plan File: ' + row.PFN + '</br>' + 'Engineer: ' + row.Engineer + '</br>' + ' Date Received: ' + row.Date_Received + '</br>' + 'Status: ' + row.Status);
+        }).bindPopup('Plan File: ' + row.PF_NO + '</br>' + 'Engineer: ' + row.ASSIGNED_TO + '</br>' + ' Date Received: ' + row.DATE + '</br>' + 'Status: ' + row.STATUS);
 
         // Add the marker only to its overlay
         marker.addTo(engineerLayers[engineer]);
       }
+    };
 
-      map.addLayer(parentGroup);
-      controlLayers.addTo(map);
+   // $.get('\data.csv', parseCsv);// pretty sure this doesn't do anything but not deleting it until sure
 
+   //this reads the file that is uploaded into the uploaded file button
+    $('#csvFileUpload').change(function (e) {
+      var file = e.target.files[0];
+      var reader = new FileReader();
+
+      // Read file contents
+      reader.onload = function (e) {
+        var csv = e.target.result;
+        var lines = csv.split("\n");
+        var csvWithoutLastLine = lines.slice(0, -1).join("\n");
+        parseCsv(csvWithoutLastLine);
+        // Parse, build Markers and populate Layer Groups
+        //parseCsv(csv);
+      };
+
+      reader.readAsText(file);
     });
 
 
 
 
-    // Must change these if engineers ever change
+    // Must change this if engineers ever change!!! 
     function getColor(engineer) {
       switch (engineer) {
-        case 'Mike':
+        case 'M. Salem':
           return 'green';
-        case 'Salar':
-          return 'blue';
-        case 'Diego':
-          return 'purple';
-        case 'Saul':
+        case 'D.Castillo':
           return 'orange';
-        case 'Chan':
+        case 'S. Rubalcava':
+          return 'purple';
+        case 'S. Tabesh':
+          return 'blue';
+        case 'C. Paek':
           return 'red';
         default:
           return 'black';
@@ -220,7 +235,6 @@
     }
 
 //****IF YOU ARE GETTING AN UNDEFINED LAYER, MAKE SURE TO GET RID OF ANY EXTRA SPACE IN THE CSV FILE 
-
   </script>
 </body>
 
